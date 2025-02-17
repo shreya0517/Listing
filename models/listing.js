@@ -9,6 +9,7 @@ const listingSchema = new Schema({
         require: true,
     },
     description: String,
+
     image: {
        url:{ type: String,
         default:
