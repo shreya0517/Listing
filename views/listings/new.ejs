@@ -8,10 +8,23 @@
 <body>
     <h3>Create A New Listing</h3>
     <form method="POST" action="/listings">
-        <input name="listing[title]" placeholder="enter title" type="text">
-        <br /><br />
-        <textarea name="listing[description]" placeholder="enter description"></textarea>
-        <br /><br />
+        <div>
+            <label for="title" class="form-label">Title</label>
+            <input 
+                name="listing[title]" 
+                placeholder="enter title" type="text" 
+                class="form-control"
+            />
+        </div>
+        <div>
+            <label for="description" class="form-label">Description</label>
+            <textarea 
+                name="listing[description]" 
+                class="form-control"
+                placeholder="enter description">
+            </textarea>
+        </div>
+        
         <input name="listing[image]" placeholder="enter image" type="text">
         <br /><br />
         <input name="listing[price]" placeholder="enter price" type="number">

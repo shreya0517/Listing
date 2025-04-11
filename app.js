@@ -56,7 +56,7 @@ app.get("/listings/:id", async (req, res) => {
 });
 
 //Create route
-app.get("/listings", async (req, res) => {
+app.post("/listings", async (req, res) => {
 //let{title, description, Image, price, country, location}= req.body;
 //or we can make an object so that we don't have to write things this long
 const newListing= new Listing(req.body.listing);
