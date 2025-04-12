@@ -44,7 +44,7 @@ app.get("/listings", async (req, res) => {
 //new route
 //it has to be written above the show route as it search by id so
 //we have to write it above so that it send the request to /new route
-app.get("/listing/new", (req, res) => {
+app.get("/listings/new", (req, res) => {
     res.render("listings/new.ejs");
 });
 
