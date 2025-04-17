@@ -6,11 +6,12 @@
         <h3><b><%= listing.title%></h3>
     </div>
     <div class="card col-6 offset-3 show-card listing-card">
-        <img src="<%= listing.image.url %>" class="card-img-top show-img" alt="listing_image"> <br>
+        <img src="<%= listing.image && listing.image.url ? listing.image.url : 'https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg' %>" class="card-img-top show-img" alt="listing_image">
+
         <div class="card-body">
             <p class="card-text">
                 <%= listing.description%><br><br>
-                <%= listing.price.toLocaleString("en-IN", { style: "currency", currency: "INR" }) %> <br>
+                <%= listing.price.toLocaleString("en-IN", { style: "currency", currency: "INR" }) %> / per night <br>
                 <%= listing.location%> <br>
                 <%= listing.country%> <br>
             </p>

@@ -9,6 +9,11 @@ const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
 const {listingSchema, reviewSchema} = require("./schema.js");
 const Review = require("./models/review.js");
+const session = require("express-session");
+const flash = require("connect-flash");
+
+const listings= require("./routes/listings.js");
+const reviews= require("./routes/review.js");
 
 
 const mongo_URL="mongodb://127.0.0.1:27017/wonderlst"
@@ -34,111 +39,32 @@ app.use(methodOverride("_method"));
 app.engine('ejs', ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
+const sessionOptions= {
+    secret: "summervacation",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        expires: Date.now() + 7 * 24 * 60 * 60 * 100,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+    },
+};
+
 //api
 app.get("/", (req, res) => {
     res.send("Hi, I am root");
 });
 
-// validate listing
-const validateListing = (req, res, next) => {
-    let {error}= listingSchema.validate(req.body);
-    if(error) {
-        let errMsg= error.details.map((el) => el.message).join(",");
-        throw new ExpressError(400, errMsg);
-    } else {
-        next();
-    }
-};
+app.use(session(sessionOptions));
+app.use(flash());
 
-// validate reviews
-const validateReview = (req, res, next) => {
-    let {error}= reviewSchema.validate(req.body);
-    if(error) {
-        let errMsg= error.details.map((el) => el.message).join(",");
-        throw new ExpressError(400, errMsg);
-    } else {
-        next();
-    }
-};
-
-//index route
-app.get("/listings", wrapAsync (async (req, res) => {
-
-    const allListings= await Listing.find({});
-    res.render("listings/index.ejs", {allListings});
-}));
-
-//new route
-//it has to be written above the show route as it search by id so
-//we have to write it above so that it send the request to /new route
-app.get("/listings/new", (req, res) => {
-    res.render("listings/new.ejs");
+app.use((req, res, next) => {
+    res.locals.sucess= req.flash("success") || [];
+    next();
 });
 
-//show route
-app.get("/listings/:id", wrapAsync (async (req, res) => {
-    let {id} = req.params;
-    const listing= await Listing.findById(id).populate({  
-          path: "reviews",
-        select: "_id rating comment"});
-        console.log(listing.reviews);
-    res.render("listings/show.ejs", {listing});
-}));
-
-//Create route      
-//let{title, description, Image, price, country, location}= req.body;
-//or we can make an object so that we don't have to write things this long            
-app.post("/listings", validateListing, wrapAsync (async (req, res, next) => {
-    
-    const newListing= new Listing(req.body.listing);
-    await newListing.save();
-    res.redirect("/listings");
-}));
-
-//Edit route
-app.get("/listings/:id/edit", wrapAsync ( async (req, res) => {
-    let {id} = req.params;
-    const listing= await Listing.findById(id);
-    res.render("listings/edit.ejs", {listing});
-}));
-
-//Update route
-app.put("/listings/:id",validateListing, wrapAsync (async (req, res) => {
-    let {id} = req.params;
-    await Listing.findByIdAndUpdate(id, {...req.body.listing});
-    res.redirect(`/listings/${id}`);//redirecting to the edited page by id
-}));
-
-//delte route
-app.delete("/listings/:id", wrapAsync (async (req, res) => {
-    let {id} = req.params;
-    let deletedListing= await Listing.findByIdAndDelete (id);
-    console.log(deletedListing);
-    res.redirect("/listings");
-}));
-
-//review post route
-app.post("/listings/:id/reviews", validateReview, wrapAsync (async(req, res)=>{
-    let listing = await Listing.findById(req.params.id);
-    let newReview = new Review (req.body.review);
-
-    listing.reviews.push(newReview);
-
-    await newReview.save();
-    await listing.save();
-
-    res.redirect(`/listings/${listing._id}`);
-}));
-
-// review deleting route
-app.delete("/listings/:id/reviews/:reviewId",  wrapAsync (async(req, res)=>{
-    let {id, reviewId }= req.params;
-
-    await Listing.findByIdAndUpdate(id, {$pull: {reviews: reviewId}});
-    await Review.findByIdAndDelete(reviewId);
-
-    res.redirect(`/listings/${id}`);
-}));
+app.use("/listings", listings);
+app.use("/listings/:id/reviews", reviews);
 
 // accessing listing
 //  app.get("/testListing", async (req, res) => {
