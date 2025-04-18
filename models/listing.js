@@ -1,6 +1,5 @@
-//requiring mongoose
+
 const mongoose = require("mongoose");
-// we will store mongoose.Schema to Schema so that we don't have to write it everytime
 const Schema = mongoose.Schema;
 const Review = require("./review.js");
 
@@ -9,7 +8,13 @@ const imageSchema = new mongoose.Schema({
         type: String,
         default: "https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg",
         set: (v) =>
-            v === "" ? "https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg" : v
+            v === "" ? "https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg" : v,
+        validate: {
+            validator: function(v) {
+              return /^https?:\/\/.+/.test(v);
+            },
+            message: props => `${props.value} is not a valid URL!`
+        }        
     }
 });
 
@@ -35,7 +40,7 @@ const listingSchema = new Schema({
     ],
 });
 
-listingSchema.post("findOneAndDelete", async(lisitng)=> {
+listingSchema.post("findOneAndDelete", async(listing)=> {
     if(listing) {
         await Review.deleteMany({_id: {$in: listing.reviews}});
     }
