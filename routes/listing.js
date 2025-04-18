@@ -6,6 +6,24 @@ const {listingSchema} = require("../schema.js");
 const Listing = require("../models/listing.js");
 
 
+// Middleware to ensure `image` field is in the correct format
+const transformImageField = (req, res, next) => {
+    const { listing } = req.body;
+
+    console.log("Before transformation:", listing);
+
+    if (listing && typeof listing.image === "string") {
+        listing.image = { url: listing.image };
+    }
+
+    if (listing && (!listing.image.url || listing.image.url.trim() === "")) {
+        listing.image.url = "https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg";
+    }
+
+    console.log("After transformation:", listing);
+
+    next();
+};
 
 // validate listing
 const validateListing = (req, res, next) => {
@@ -47,15 +65,9 @@ router.get("/:id", wrapAsync (async (req, res) => {
 }));
 
 //Create route      
-//let{title, description, Image, price, country, location}= req.body;
-//or we can make an object so that we don't have to write things this long            
-router.post("/", validateListing, wrapAsync (async (req, res, next) => {
-    const {listing} = req.body;
-
-    if(typeof listing.image === "string") {
-        listing.image = {url: listing.image};
-    }
-    const newListing= new Listing(listing);
+router.post("/", transformImageField, validateListing, wrapAsync(async (req, res) => {
+    const { listing } = req.body;
+    const newListing = new Listing(listing);
     await newListing.save();
     req.flash("success", "New Listing Created!");
     res.redirect("/listings");
@@ -73,15 +85,11 @@ router.get("/:id/edit", wrapAsync ( async (req, res) => {
 }));
 
 //Update route
-router.put("/:id",validateListing, wrapAsync (async (req, res) => {
-    let {id} = req.params;
-    await Listing.findByIdAndUpdate(id, {...req.body.listing});
+router.put("/:id", transformImageField, validateListing, wrapAsync(async (req, res) => {
+    let { id } = req.params;
+    await Listing.findByIdAndUpdate(id, { ...req.body.listing });
     req.flash("success", "Listing Updated!");
-    if(!listing) {
-        req.flash("error", "Listing you requested for does not exist!");
-        res.redirect("/listings");
-    }
-    res.redirect(`/listings/${id}`);//redirecting to the edited page by id
+    res.redirect(`/listings/${id}`);
 }));
 
 //delte route

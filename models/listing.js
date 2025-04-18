@@ -1,22 +1,6 @@
-
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const Review = require("./review.js");
-
-const imageSchema = new mongoose.Schema({
-    url: {
-        type: String,
-        default: "https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg",
-        set: (v) =>
-            v === "" ? "https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg" : v,
-        validate: {
-            validator: function(v) {
-              return /^https?:\/\/.+/.test(v);
-            },
-            message: props => `${props.value} is not a valid URL!`
-        }        
-    }
-});
 
 const listingSchema = new Schema({
     title: {
@@ -26,8 +10,11 @@ const listingSchema = new Schema({
     description: String,
 
     image: {
-        type: imageSchema,
-        default: () => ({}) // makes sure the default applies
+        url: {
+            type: String,
+            required: true,
+            default: "https://thumbs.dreamstime.com/b/modern-house-interior-exterior-design-46517595.jpg"
+        }
     },
     price: Number,
     location: String,
@@ -47,4 +34,4 @@ listingSchema.post("findOneAndDelete", async(listing)=> {
 });
 
 const Listing = mongoose.model("Listing", listingSchema);
-module.exports= Listing; 
+module.exports= Listing;
