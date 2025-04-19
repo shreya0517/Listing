@@ -4,7 +4,7 @@ const wrapAsync = require("../utils/wrapAsync.js");
 const ExpressError = require("../utils/ExpressError.js");
 const {listingSchema} = require("../schema.js");
 const Listing = require("../models/listing.js");
-
+const { isLoggedIn, isOwner } = require("../middleware.js");
 
 // Middleware to ensure `image` field is in the correct format
 const transformImageField = (req, res, next) => {
@@ -46,54 +46,54 @@ router.get("/", wrapAsync (async (req, res) => {
 //new route
 //it has to be written above the show route as it search by id so
 //we have to write it above so that it send the request to /new route
-router.get("/new", (req, res) => {
+router.get("/new", isLoggedIn, (req, res) => {
     res.render("listings/new.ejs");
 });
 
 //show route
-router.get("/:id", wrapAsync (async (req, res) => {
+router.get("/:id", 
+    wrapAsync (async (req, res) => {
     let {id} = req.params;
     const listing= await Listing.findById(id).populate({  
-        path: "reviews",
-        select: "_id rating comment"
-    });
+        path: "reviews"
+        // select: "_id rating comment"
+    }).populate("owner");
     if(!listing) {
         req.flash("error", "Listing you requested for does not exist!");
         res.redirect("/listings");
+        
     }
     res.render("listings/show.ejs", {listing});
 }));
 
 //Create route      
-router.post("/", transformImageField, validateListing, wrapAsync(async (req, res) => {
-    const { listing } = req.body;
-    const newListing = new Listing(listing);
-    await newListing.save();
-    req.flash("success", "New Listing Created!");
-    res.redirect("/listings");
-}));
+router.post("/", 
+    isLoggedIn,
+    transformImageField,
+    validateListing, 
+    wrapAsync(async (req, res) => {
+        const { listing } = req.body;
 
-//Edit route
-router.get("/:id/edit", wrapAsync ( async (req, res) => {
-    let {id} = req.params;
-    const listing= await Listing.findById(id);
-    if(!listing) {
-        req.flash("error", "Listing you requested for does not exist!");
+        if (typeof listing.image === "string") {
+            listing.image = { url: listing.image };
+        } else if (!listing.image || !listing.image.url) {
+            req.flash("error", "Image URL is required!");
+            return res.redirect("/listings/new");
+        }
+
+        const newListing = new Listing(listing);
+        newListing.owner = req.user._id;
+
+        await newListing.save();
+        req.flash("success", "New Listing Created!");
         res.redirect("/listings");
-    }
-    res.render("listings/edit.ejs", {listing});
-}));
-
-//Update route
-router.put("/:id", transformImageField, validateListing, wrapAsync(async (req, res) => {
-    let { id } = req.params;
-    await Listing.findByIdAndUpdate(id, { ...req.body.listing });
-    req.flash("success", "Listing Updated!");
-    res.redirect(`/listings/${id}`);
 }));
 
 //delte route
-router.delete("/:id", wrapAsync (async (req, res) => {
+router.delete("/:id", 
+    isLoggedIn, 
+    isOwner,
+    wrapAsync (async (req, res) => {
     let {id} = req.params;
     let deletedListing= await Listing.findByIdAndDelete (id);
     console.log(deletedListing);
